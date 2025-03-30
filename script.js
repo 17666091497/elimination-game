@@ -1,7 +1,7 @@
 const boardSize = 8;
 const colors = ['R', 'G', 'B', 'Y', 'P'];
 const board = [];
-let selectedCell = null;
+let score = 0;
 
 // 初始化棋盘
 function initializeBoard() {
@@ -33,70 +33,63 @@ function randomColor() {
 // 选择格子
 function selectCell(event) {
     const cell = event.target;
-    if (selectedCell) {
-        swapCells(selectedCell, cell);
-        selectedCell.classList.remove('selected');
-        selectedCell = null;
-    } else {
-        selectedCell = cell;
-        selectedCell.classList.add('selected');
+    const row = parseInt(cell.dataset.row);
+    const col = parseInt(cell.dataset.col);
+
+    // 检查是否可以消除
+    if (canEliminate(row, col)) {
+        eliminate(row, col);
+        updateScore();
+        gravity();
     }
 }
 
-// 交换两个格子
-function swapCells(cell1, cell2) {
-    const row1 = parseInt(cell1.dataset.row);
-    const col1 = parseInt(cell1.dataset.col);
-    const row2 = parseInt(cell2.dataset.row);
-    const col2 = parseInt(cell2.dataset.col);
+// 检查是否可以消除
+function canEliminate(row, col) {
+    // 检查行是否可以消除
+    let rowEliminable = true;
+    for (let c = 0; c < boardSize; c++) {
+        if (board[row][c] === '') {
+            rowEliminable = false;
+            break;
+        }
+    }
 
-    // 交换颜色
-    const temp = board[row1][col1];
-    board[row1][col1] = board[row2][col2];
-    board[row2][col2] = temp;
+    // 检查列是否可以消除
+    let colEliminable = true;
+    for (let r = 0; r < boardSize; r++) {
+        if (board[r][col] === '') {
+            colEliminable = false;
+            break;
+        }
+    }
 
-    // 更新DOM
-    cell1.textContent = board[row1][col1];
-    cell2.textContent = board[row2][col2];
+    return rowEliminable || colEliminable;
+}
 
-    // 检查并消除
-    if (!checkAndEliminate()) {
-        // 如果没有消除，恢复交换
-        swapCells(cell1, cell2);
+// 消除方块
+function eliminate(row, col) {
+    // 消除行
+    for (let c = 0; c < boardSize; c++) {
+        if (board[row][c] !== '') {
+            board[row][c] = '';
+            document.querySelector(`[data-row="${row}"][data-col="${c}"]`).textContent = '';
+        }
+    }
+
+    // 消除列
+    for (let r = 0; r < boardSize; r++) {
+        if (board[r][col] !== '') {
+            board[r][col] = '';
+            document.querySelector(`[data-row="${r}"][data-col="${col}"]`).textContent = '';
+        }
     }
 }
 
-// 检查并消除连续的3个或以上相同颜色的格子
-function checkAndEliminate() {
-    let eliminated = false;
-
-    // 检查横向
-    for (let row = 0; row < boardSize; row++) {
-        for (let col = 0; col < boardSize - 2; col++) {
-            if (board[row][col] === board[row][col + 1] && board[row][col] === board[row][col + 2] && board[row][col] !== '') {
-                board[row][col] = board[row][col + 1] = board[row][col + 2] = '';
-                document.querySelector(`[data-row="${row}"][data-col="${col}"]`).textContent = '';
-                document.querySelector(`[data-row="${row}"][data-col="${col + 1}"]`).textContent = '';
-                document.querySelector(`[data-row="${row}"][data-col="${col + 2}"]`).textContent = '';
-                eliminated = true;
-            }
-        }
-    }
-
-    // 检查纵向
-    for (let col = 0; col < boardSize; col++) {
-        for (let row = 0; row < boardSize - 2; row++) {
-            if (board[row][col] === board[row + 1][col] && board[row][col] === board[row + 2][col] && board[row][col] !== '') {
-                board[row][col] = board[row + 1][col] = board[row + 2][col] = '';
-                document.querySelector(`[data-row="${row}"][data-col="${col}"]`).textContent = '';
-                document.querySelector(`[data-row="${row + 1}"][data-col="${col}"]`).textContent = '';
-                document.querySelector(`[data-row="${row + 2}"][data-col="${col}"]`).textContent = '';
-                eliminated = true;
-            }
-        }
-    }
-
-    return eliminated;
+// 更新分数
+function updateScore() {
+    score += 100;
+    document.getElementById('score-value').textContent = score;
 }
 
 // 重力下落
